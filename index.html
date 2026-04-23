@@ -546,14 +546,42 @@ function generateInterpretation(cards, lang) {
 }
 
 // ─────────────────────────────────────────────────────────
-// CARD PLACEHOLDER SVG
+// SMART CARD RENDERER (Image + Fallback)
 // ─────────────────────────────────────────────────────────
 function CardPlaceholder({ card, isReversed, size = "normal", onClick }) {
+  // This state tells the app if the image failed to load
+  const [imgError, setImgError] = React.useState(false); 
+
   const suitColors = { wands: "#c44", cups: "#48a", swords: "#888", pentacles: "#b90" };
   const bg = card.type === "major" ? "#2a1f3d" : (suitColors[card.suit] || "#333");
   const w = size === "small" ? 90 : size === "large" ? 200 : 140;
   const h = Math.round(w * 1.56);
 
+  // 1. IF NO ERROR YET: Try to draw the image
+  if (!imgError) {
+    return (
+      <img
+        src={`cards/${card.id}.jpg`} 
+        alt={card.name}
+        onClick={onClick}
+        onError={() => setImgError(true)} // <-- THE FIX: If missing, switch to text layout
+        style={{
+          width: w, 
+          height: h, 
+          borderRadius: 6, 
+          objectFit: "cover",
+          cursor: onClick ? "pointer" : "default",
+          border: "1px solid rgba(196,163,90,0.3)", 
+          flexShrink: 0,
+          transform: isReversed ? "rotate(180deg)" : "none",
+          transition: "transform 0.6s ease, box-shadow 0.3s ease",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+        }}
+      />
+    );
+  }
+
+  // 2. IF IMAGE IS MISSING: Draw the original CSS text layout
   return (
     <div
       onClick={onClick}
