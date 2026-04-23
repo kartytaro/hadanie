@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Rider–Waite Historical Codex</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #12100e; overflow-x: hidden; }
+    #root { min-height: 100vh; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(196,163,90,0.2); border-radius: 3px; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+const { useState, useEffect, useCallback, useMemo, useRef } = React;
+
+// ─────────────────────────────────────────────────────────
+// CARD DATA — All 78 Rider-Waite cards with interpretations
+// ─────────────────────────────────────────────────────────
+const CARDS = [
+  // ═══════════════ MAJOR ARCANA ═══════════════
+  {
+    id: "the_fool", name: "The Fool", numeral: "0", type: "major", suit: null,
+    image: "cards/the_fool.jpg",
+    interpretations: [
+      { source: "Pratesi's Cartomancer", year: 1750, text: "Madness." },
+      { source: "De Mellet", year: 1781, text: "Madness. He has no rank." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Shin, the Fool. The sensitive principle, the flesh, eternal life." },
+      { source: "Christian", year: 1870, text: "Arcanum 0. The Crocodile. Expiation. The punishment following every error. You can see here a blind man carrying a beggar's wallet, about to collide with a broken obelisk on which a crocodile waits with open jaws. The crocodile is the emblem of fate and the inevitable expiation." },
+      { source: "Mathers", year: 1888, text: "The Foolish Man. Folly, expiation, wavering.", reversed: "Hesitation, instability, trouble arising herefrom." },
+      { source: "Golden Dawn", year: 1888, text: "The Spirit of the Ether. Foolish Man. Idea, spirituality, that which endeavors to rise above the material. But if the divination be regarding ordinary life, the card is not good, and shows folly, stupidity, eccentricity, and even mania unless with very good cards indeed." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "The Fool signifies the consummation of everything, when that which began his initiation at zero attains the term of all numeration and existence. This card passes through all the numbered cards and is changed in each, as the natural man passes through worlds of lesser experience, worlds of successive attainment." },
+      { source: "Waite", year: 1910, text: "The Fool. Folly, mania, extravagance, intoxication, delirium, frenzy.", reversed: "Negligence, absence, apathy, nullity." }
+    ]
+  },
+  {
+    id: "the_magician", name: "The Magician", numeral: "I", type: "major", suit: null,
+    image: "cards/the_magician.jpg",
+    interpretations: [
+      { source: "Pratesi's Cartomancer", year: 1750, text: "Bagattino, married man." },
+      { source: "De Mellet", year: 1781, text: "The Mountebank." },
+      { source: "Court de Gébelin", year: 1773, text: "The Thimble-Rigger." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Aleph, the Juggler. The Magus. Being, mind, man, or God; the comprehensible object; unity; mother of numbers; the first substance." },
+      { source: "Christian", year: 1870, text: "The Magus: Will. Arcanum I expresses in the divine world the Absolute Being who contains and from whom flow all possible things; in the intellectual world, Unity, the principle and synthesis of numbers; in the physical world, Man, the highest of all living creatures." },
+      { source: "Mathers", year: 1888, text: "The Juggler or Magician. Willpower, dexterity.", reversed: "Will applied to evil ends, weakness of will, knavishness." },
+      { source: "Golden Dawn", year: 1888, text: "The Magus of Power. The Magician or Juggler. Skill, wisdom, adaptation, cunning, always depending on the cards around it and whether or not it's reversed. Sometimes occult wisdom." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "The Juggler. Skill, subtlety, on the evil side, trickery. Also occult practice." },
+      { source: "Waite", year: 1910, text: "The Magician. Skill, diplomacy, subtlety, snares of enemies, the inquirer—if male.", reversed: "Physician, magus, disgrace." }
+    ]
+  },
+  {
+    id: "the_high_priestess", name: "The High Priestess", numeral: "II", type: "major", suit: null,
+    image: "cards/the_high_priestess.jpg",
+    interpretations: [
+      { source: "De Mellet", year: 1781, text: "Juno. Pride, symbolized by her peacock. Idolatry." },
+      { source: "Court de Gébelin", year: 1773, text: "The High Priestess." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Beth, the Female Pope. The house of God and Man, the sanctuary, the law, gnosis, Kabbala, the occult church, the duad, wife or mother." },
+      { source: "Christian", year: 1870, text: "Arcanum II. The door of the occult sanctuary. Knowledge." },
+      { source: "Mathers", year: 1888, text: "The High Priestess. Science, wisdom, education.", reversed: "Conceit, ignorance, unskillfulness, superficial knowledge." },
+      { source: "Golden Dawn", year: 1888, text: "The Priestess of the Silver Star. High Priestess. Change, increase and decrease. Fluctuation (whether for good or evil is shown by cards connected with it.)" },
+      { source: "Grand Orient (Waite)", year: 1889, text: "High Priestess. Nature, including generation and reproduction, fertility, change." },
+      { source: "Waite", year: 1910, text: "The High Priestess. Secrets, mystery, the unrevealed future. The woman who interests the inquirer, if male; the inquirer herself, if female. Wisdom and science.", reversed: "Moral or physical ardor, conceit, surface knowledge." }
+    ]
+  },
+  {
+    id: "the_empress", name: "The Empress", numeral: "III", type: "major", suit: null,
+    image: "cards/the_empress.jpg",
+    interpretations: [
+      { source: "De Mellet", year: 1781, text: "The Queen." },
+      { source: "Court de Gébelin", year: 1773, text: "The Queen." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Gimel, the Empress. The word, the triad, plenitude, fecundity, nature, generation in the three worlds." },
+      { source: "Christian", year: 1870, text: "Arcanum III. Isis-Urania: Action. In the divine world, the supreme power balanced by the eternally active mind and absolute wisdom; in the intellectual world, the universal fecundity of the Supreme Being; in the physical world, nature in labor, the germination of the acts that are to spring from the will." },
+      { source: "Mathers", year: 1888, text: "The Empress. Action, plan, movement in a matter, initiative.", reversed: "Inaction, frittering away of power, lack of concentration, vacillation." },
+      { source: "Golden Dawn", year: 1888, text: "Daughter of the Mighty Ones. Empress. Beauty, pleasure, success, luxury; sometimes dissipation, but only with very evil cards." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "Empress. The sphere of action; the feminine side of power, rule, and authority; woman's influence; physical beauty; woman's reign; also the joy of life, and excesses on the evil side." },
+      { source: "Waite", year: 1910, text: "The Empress. Fruitfulness, action, initiative.", reversed: "Light, truth, the unraveling of involved matters, public rejoicings; according to another reading, vacillation." }
+    ]
+  },
+  {
+    id: "the_emperor", name: "The Emperor", numeral: "IV", type: "major", suit: null,
+    image: "cards/the_emperor.jpg",
+    interpretations: [
+      { source: "De Mellet", year: 1781, text: "The king." },
+      { source: "Court de Gébelin", year: 1773, text: "The king." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Daleth, the emperor. The Porte, or government of the East, initiation, power, the Tetragram, the quaternary, the cubic stone." },
+      { source: "Christian", year: 1870, text: "Arcanum IV. The Cubic Stone. Realization." },
+      { source: "Mathers", year: 1888, text: "The Emperor. Realization, effect, development.", reversed: "Stoppage, check, immaturity." },
+      { source: "Golden Dawn", year: 1888, text: "Son of the Morning, chief among the mighty. Emperor. War, victory, strife, ambition." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "Emperor. Logic, experience, wisdom, male power." },
+      { source: "Waite", year: 1910, text: "The Emperor. Stability, power, protection, realization, a great person, aid, reason, conviction, authority, and will.", reversed: "Confusion to enemies, obstruction, immaturity." }
+    ]
+  },
+  {
+    id: "the_hierophant", name: "The Hierophant", numeral: "V", type: "major", suit: null,
+    image: "cards/the_hierophant.jpg",
+    interpretations: [
+      { source: "De Mellet", year: 1781, text: "Jupiter. The Everlasting mounted on an eagle." },
+      { source: "Court de Gébelin", year: 1773, text: "The high priest or chief hierophant." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Heh, the pope. Indication, demonstration, instruction, law, symbolism, philosophy, religion." },
+      { source: "Christian", year: 1870, text: "Arcanum V. The Master of the Arcana or Sacred Mysteries, the hierophant or occult inspiration." },
+      { source: "Mathers", year: 1888, text: "The Hierophant, or Pope. Mercy, beneficence, kindness, goodness.", reversed: "Overkindness, weakness, foolish generosity." },
+      { source: "Golden Dawn", year: 1888, text: "Magus of the eternal gods. Hierophant. Divine wisdom. Manifestation, explanation, teaching. Occult wisdom." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "Pope, or Hierophant. Aspiration, power of the keys, the outward show of spiritual authority." },
+      { source: "Waite", year: 1910, text: "The Hierophant. Marriage, alliance, servitude; by another account, mercy and goodness; inspiration; the man to whom the inquirer has recourse.", reversed: "Overkindness, weakness." }
+    ]
+  },
+  {
+    id: "the_lovers", name: "The Lovers", numeral: "VI", type: "major", suit: null,
+    image: "cards/the_lovers.jpg",
+    interpretations: [
+      { source: "Pratesi's Cartomancer", year: 1750, text: "Love." },
+      { source: "De Mellet", year: 1781, text: "Love. A man hesitating between Vice and Virtue." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Vau, Vice, and Virtue. Interlacement, entanglement, union, combination, equilibrium." },
+      { source: "Christian", year: 1870, text: "Arcanum VI. The Two Roads. The Ordeal. A man standing motionless at a crossroads, the struggle between the passions and conscience." },
+      { source: "Mathers", year: 1888, text: "The Lovers. Trials surmounted.", reversed: "Unwise plans, failure when put to the test." },
+      { source: "Golden Dawn", year: 1888, text: "Children of the Voice Divine, Oracles of the Mighty Gods. The Lovers. Inspiration, motive power, impulse." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "Lovers. Material union, affection, desire, natural love, harmony, equilibrium." },
+      { source: "Waite", year: 1910, text: "The Lovers. Attraction, love, beauty, trials overcome.", reversed: "Failure, foolish designs. Another account speaks of marriage frustrated." }
+    ]
+  },
+  {
+    id: "the_chariot", name: "The Chariot", numeral: "VII", type: "major", suit: null,
+    image: "cards/the_chariot.jpg",
+    interpretations: [
+      { source: "Pratesi's Cartomancer", year: 1750, text: "Journey." },
+      { source: "De Mellet", year: 1781, text: "Chariot of War. Crimes of the Iron Age." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Zayin, the Cubic Chariot. Weapon, sword, cherubic sword of fire, the sacred septenary, triumph, royalty, priesthood." },
+      { source: "Christian", year: 1870, text: "Arcanum VII. The Chariot of Osiris: Victory." },
+      { source: "Mathers", year: 1888, text: "The Chariot. Triumph, victory, overcoming obstacles.", reversed: "Overthrown, conquered by obstacles at the last moment." },
+      { source: "Golden Dawn", year: 1888, text: "Child of the Power of the Waters, Lord of the Triumph of Light. The Chariot. Triumph, victory, health, success, though sometimes not enduring." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "Chariot. Triumph of reason. Success, the right prevailing, conquest." },
+      { source: "Waite", year: 1910, text: "The Chariot. Providence, war, triumph, presumption, vengeance.", reversed: "Riot, dispute, litigation, defeat." }
+    ]
+  },
+  {
+    id: "strength", name: "Strength", numeral: "VIII", type: "major", suit: null,
+    image: "cards/strength.jpg",
+    interpretations: [
+      { source: "De Mellet", year: 1781, text: "Justice." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Cheth, Justice. Balance, attraction and repulsion, life, terror, promise and threat." },
+      { source: "Christian", year: 1870, text: "Arcanum VIII. Themis: Equilibrium." },
+      { source: "Mathers", year: 1888, text: "Themis, or Justice. Equilibrium, balance, justice.", reversed: "Bigotry, want of balance, abuse of justice, overseverity, bias." },
+      { source: "Golden Dawn", year: 1888, text: "Daughter of the Lord of Truth, Holder of the Balances. Justice. Strength arrested in the act of judgment." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "Justice. Equilibrium on the mental side rather than the sensuous." },
+      { source: "Waite", year: 1910, text: "Justice. Equity, probity, vindication.", reversed: "Law in all departments, legal complications, bigotry, bias, excessive severity." }
+    ]
+  },
+  {
+    id: "the_hermit", name: "The Hermit", numeral: "IX", type: "major", suit: null,
+    image: "cards/the_hermit.jpg",
+    interpretations: [
+      { source: "Pratesi's Cartomancer", year: 1750, text: "The Old Man." },
+      { source: "De Mellet", year: 1781, text: "The Hermit. The sage in search of justice." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Teth, the Hermit or Capuchin monk. Goodness, revulsion from evil, morality, wisdom." },
+      { source: "Christian", year: 1870, text: "Arcanum IX. The Veiled Lamp: Prudence." },
+      { source: "Mathers", year: 1888, text: "The Hermit. Prudence, caution, deliberation.", reversed: "Overprudence, timorousness, fear." },
+      { source: "Golden Dawn", year: 1888, text: "The Magus of the Voice of Light, the Prophet of the Gods. The Hermit, or Prophet. Wisdom sought for and obtained from above." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "Hermit. Caution, safety, protection, detachment, Prudence, sagacity, search after truth." },
+      { source: "Waite", year: 1910, text: "The Hermit. Prudence, circumspection. Also treason, roguery, corruption.", reversed: "Concealment, disguise, fear, unreasoned caution." }
+    ]
+  },
+  {
+    id: "wheel_of_fortune", name: "Wheel of Fortune", numeral: "X", type: "major", suit: null,
+    image: "cards/wheel_of_fortune.jpg",
+    interpretations: [
+      { source: "De Mellet", year: 1781, text: "The Wheel of Fortune. The injustice of the fickle goddess." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Yod, the Wheel of Fortune. Principle, manifestation, praise, manly honor." },
+      { source: "Christian", year: 1870, text: "Arcanum X. The Sphinx: Fortune." },
+      { source: "Mathers", year: 1888, text: "The Wheel of Fortune. Good fortune, success, unexpected luck.", reversed: "Failure, unexpected ill luck." },
+      { source: "Golden Dawn", year: 1888, text: "The Lord of the Forces of Life. Wheel of Fortune. Good fortune and qualified happiness." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "Wheel of Fortune. Mutation, revolution, the external side of fortune." },
+      { source: "Waite", year: 1910, text: "Wheel of Fortune. Fortune, success, elevation, luck, happiness.", reversed: "Increase, abundance, superfluity." }
+    ]
+  },
+  {
+    id: "justice", name: "Justice", numeral: "XI", type: "major", suit: null,
+    image: "cards/justice.jpg",
+    interpretations: [
+      { source: "Pratesi's Cartomancer", year: 1750, text: "Violence." },
+      { source: "De Mellet", year: 1781, text: "Fortitude, who comes to the aid of Prudence by vanquishing the lion." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Kaph, Strength. The hand in the act of grasping and holding." },
+      { source: "Christian", year: 1870, text: "Arcanum XI. The Tamed Lion: Strength." },
+      { source: "Mathers", year: 1888, text: "Strength, or Fortitude. Power, might, force.", reversed: "Abuse of power, overbearingness, want of Fortitude." },
+      { source: "Golden Dawn", year: 1888, text: "Daughter of the Flaming Sword, Leader of the Lion. Fortitude, courage, strength, power not arrested in the act of judgment, but passing on to further action." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "Fortitude, or Strength. Courage, vitality, tenacity of things, high endurance." },
+      { source: "Waite", year: 1910, text: "Fortitude. Power, energy, action, courage, magnanimity, success and honors.", reversed: "Despotism, abuse of power, weakness, discord or disgrace." }
+    ]
+  },
+  {
+    id: "the_hanged_man", name: "The Hanged Man", numeral: "XII", type: "major", suit: null,
+    image: "cards/the_hanged_man.jpg",
+    interpretations: [
+      { source: "Pratesi's Cartomancer", year: 1750, text: "The Traitor, betrayal." },
+      { source: "De Mellet", year: 1781, text: "The Hanged Man. Prudence." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Lamed, a man hanging by one foot. Example, instruction, public teaching." },
+      { source: "Christian", year: 1870, text: "Arcanum XII. The Sacrifice: Violent Death." },
+      { source: "Mathers", year: 1888, text: "The Hanged Man. Self-sacrifice, sacrifice, devotion, that which is bound.", reversed: "Selfishness, that which is unbound, partial sacrifice." },
+      { source: "Golden Dawn", year: 1888, text: "The Spirit of the Mighty Waters. Hanged Man or Drowned Man. Enforced sacrifice, punishment, loss, suffering." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "Hanged Man. Renunciation, for whatever cause and whatever motive." },
+      { source: "Waite", year: 1910, text: "The Hanged Man. Wisdom, circumspection, discernment, trials, sacrifice, intuition, divination, prophecy.", reversed: "Selfishness, the crowd, the body politic." }
+    ]
+  },
+  {
+    id: "death", name: "Death", numeral: "XIII", type: "major", suit: null,
+    image: "cards/death.jpg",
+    interpretations: [
+      { source: "Pratesi's Cartomancer", year: 1750, text: "Death." },
+      { source: "De Mellet", year: 1781, text: "Death." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Mem. Death. Domination and force, new birth, creation and destruction." },
+      { source: "Christian", year: 1870, text: "Arcanum XIII. The Scythe: Transformation. The perpetual movement of creation, destruction and renewal." },
+      { source: "Mathers", year: 1888, text: "Death, change, transformation, alteration for the worse.", reversed: "Death just escaped, partial change, alteration for the better." },
+      { source: "Golden Dawn", year: 1888, text: "The Child of the Great Transformers, Lord of the Gates of Death. Death, time, transformation, change, sometimes destruction." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "Death, transforming force, destruction." },
+      { source: "Waite", year: 1910, text: "Death. End, mortality, destruction, corruption.", reversed: "Inertia, sleep, lethargy, petrification, hope destroyed." }
+    ]
+  },
+  {
+    id: "temperance", name: "Temperance", numeral: "XIV", type: "major", suit: null,
+    image: "cards/temperance.jpg",
+    interpretations: [
+      { source: "Pratesi's Cartomancer", year: 1750, text: "Time." },
+      { source: "De Mellet", year: 1781, text: "Temperance. An angel instructs Man on the avoidance of Death." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Nun. Temperance: the Heaven of the Sun, climates, seasons, motion, changes of life." },
+      { source: "Christian", year: 1870, text: "Arcanum XIV. The Solar Spirit: Initiative." },
+      { source: "Mathers", year: 1888, text: "Temperance. Combination, conformation, uniting.", reversed: "Ill-advised combinations, clashing interests." },
+      { source: "Golden Dawn", year: 1888, text: "Daughter of the Reconcilers, the Bringer Forth of Life. Temperance. Combination." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "Temperance. New blood, combination, admixture." },
+      { source: "Waite", year: 1910, text: "Temperance. Household economy, moderation, frugality, management, accommodation.", reversed: "Things connected with churches, religions, sects, the priesthood. Also disunion, unfortunate combinations, competing interests." }
+    ]
+  },
+  {
+    id: "the_devil", name: "The Devil", numeral: "XV", type: "major", suit: null,
+    image: "cards/the_devil.jpg",
+    interpretations: [
+      { source: "Pratesi's Cartomancer", year: 1750, text: "Anger." },
+      { source: "De Mellet", year: 1781, text: "The Devil. Typhon. Human nature defiled and enslaved." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Samekh. The Devil. The Heaven of Mercury, occult science, magic, commerce, eloquence, mystery, moral force." },
+      { source: "Christian", year: 1870, text: "Arcanum XV. Typhon: Fate. Pre-destination; Mystery; the Unforeseen, Fatality." },
+      { source: "Mathers", year: 1888, text: "The Devil. Fatality for good.", reversed: "Fatality for evil." },
+      { source: "Golden Dawn", year: 1888, text: "Lord of the Gates of Matter, Child of the Forces of Time. Devil. Material Force. Temptation, obsession." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "The Devil, or Typhon. Fatality, evil, the false spirit; can indicate also the good working through evil." },
+      { source: "Waite", year: 1910, text: "The Devil. Violence, vehemence, fatality. What is predestined, but not for this reason evil.", reversed: "Evil fatality, weakness, blindness." }
+    ]
+  },
+  {
+    id: "the_tower", name: "The Tower", numeral: "XVI", type: "major", suit: null,
+    image: "cards/the_tower.jpg",
+    interpretations: [
+      { source: "De Mellet", year: 1781, text: "The Tower. The House of God. The earthly paradise from which man and woman are expelled." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Ayin. Tower: The Heaven of the Moon, alterations, subversions, changes, failings." },
+      { source: "Christian", year: 1870, text: "Arcanum XVI. The Lightning-Struck Tower: Ruin. The punishment of pride; reversals of fortune." },
+      { source: "Mathers", year: 1888, text: "The Lightning-Struck Tower. Ruin, disruption, loss, bankruptcy.", reversed: "These in a partial degree." },
+      { source: "Golden Dawn", year: 1888, text: "Lord of the Hosts of the Mighty. Tower. Ambition, fighting, courage. In certain combinations, destruction, danger, fall." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "Ruined Tower. Destruction, confusion, judgment; also the idea of divine wrath." },
+      { source: "Waite", year: 1910, text: "The Tower. Misery, indigence, adversity, calamity, disgrace, deception, unforeseen catastrophe.", reversed: "The same in a lesser degree. Also imprisonment, tyranny." }
+    ]
+  },
+  {
+    id: "the_star", name: "The Star", numeral: "XVII", type: "major", suit: null,
+    image: "cards/the_star.jpg",
+    interpretations: [
+      { source: "Pratesi's Cartomancer", year: 1750, text: "Gift." },
+      { source: "De Mellet", year: 1781, text: "The Star. The creation of the stars and fishes." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Peh. The Blazing Star. Heaven of the soul, outpouring of thought, moral influence of idea on form, immortality." },
+      { source: "Christian", year: 1870, text: "Arcanum XVII. The Star of the Magi: Hope. Immortality; the Inner Light; Hope." },
+      { source: "Mathers", year: 1888, text: "The Star. Hope, expectation, bright promises.", reversed: "Hopes not fulfilled, or only in a minor degree." },
+      { source: "Golden Dawn", year: 1888, text: "Daughter of the Firmament, Dweller between the Waters. Star. Hope, faith, unexpected help.", reversed: "Deceived hope." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "Star. Light descending, hope; the symbol of immortality." },
+      { source: "Waite", year: 1910, text: "The Star. Loss, theft, abandonment; another reading says hope and bright prospects.", reversed: "Arrogance, haughtiness, impotence." }
+    ]
+  },
+  {
+    id: "the_moon", name: "The Moon", numeral: "XVIII", type: "major", suit: null,
+    image: "cards/the_moon.jpg",
+    interpretations: [
+      { source: "Pratesi's Cartomancer", year: 1750, text: "Night." },
+      { source: "De Mellet", year: 1781, text: "The Moon. Creation of the Moon and terrestrial animals." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Tzaddi. The Moon. The elements, the visible world, reflected light, material forms, symbolism." },
+      { source: "Christian", year: 1870, text: "Arcanum XVIII. Twilight: Deceptions. Darkness that cloaks the Spirit; deceptions and hidden enemies." },
+      { source: "Mathers", year: 1888, text: "The Moon. Twilight, deception, error.", reversed: "Slight deceptions, trifling mistakes." },
+      { source: "Golden Dawn", year: 1888, text: "Ruler of Flux and Reflux, Child of the Sons of the Mighty. Moon. Dissatisfaction, voluntary change.", reversed: "Error, lying, falsity, deception." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "Moon. Half-light, mutation, intellectual uncertainty, region of illusion; false-seeming." },
+      { source: "Waite", year: 1910, text: "The Moon. Hidden enemies, danger, calumny, darkness, terror, deception, occult forces, error.", reversed: "Instability, inconstancy, silence, lesser degrees of deception and error." }
+    ]
+  },
+  {
+    id: "the_sun", name: "The Sun", numeral: "XIX", type: "major", suit: null,
+    image: "cards/the_sun.jpg",
+    interpretations: [
+      { source: "Pratesi's Cartomancer", year: 1750, text: "Day." },
+      { source: "De Mellet", year: 1781, text: "The Sun. The Creation of the Sun and the union of man and woman." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Kaph. A radiant Sun: composites, the head, apex, prince of heaven." },
+      { source: "Christian", year: 1870, text: "Arcanum XIX. The Blazing Light: earthly happiness. The supreme Heaven; sacred Truth; peaceful Happiness." },
+      { source: "Mathers", year: 1888, text: "The Sun. Happiness, contentment, joy.", reversed: "These in minor degree." },
+      { source: "Golden Dawn", year: 1888, text: "Lord of the Fire of the World. Sun. Glory, gain, riches, sometimes also arrogance.", reversed: "Display, vanity." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "Sun. Full light, intellectual and material, earthly happiness." },
+      { source: "Waite", year: 1910, text: "The Sun. Material happiness, fortunate marriage, contentment.", reversed: "The same in a lesser sense." }
+    ]
+  },
+  {
+    id: "judgement", name: "Judgement", numeral: "XX", type: "major", suit: null,
+    image: "cards/judgement.jpg",
+    interpretations: [
+      { source: "Pratesi's Cartomancer", year: 1750, text: "Angel, wedding, and settlement." },
+      { source: "De Mellet", year: 1781, text: "The Angel. The creation of man." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Resh. The Judgment. Vegetative principle, generative virtue of the earth, eternal life." },
+      { source: "Christian", year: 1870, text: "Arcanum XX. The Awakening of the Dead: Renewal." },
+      { source: "Mathers", year: 1888, text: "The Last Judgment. Renewal, result, determination of a matter.", reversed: "Postponement of result, delay, matter reopened later." },
+      { source: "Golden Dawn", year: 1888, text: "The Spirit of the Primal Fire. Judgment. Final decision. Sentence.", reversed: "Determination of matter without appeal on its plane." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "The Last Judgment. Resurrection, summons to new things, a change in the face of everything." },
+      { source: "Waite", year: 1910, text: "The Last Judgment. Change of position, renewal, outcome.", reversed: "Weakness, cowardice, simplicity; also deliberation, decision, sentence." }
+    ]
+  },
+  {
+    id: "the_world", name: "The World", numeral: "XXI", type: "major", suit: null,
+    image: "cards/the_world.jpg",
+    interpretations: [
+      { source: "Pratesi's Cartomancer", year: 1750, text: "Long journey." },
+      { source: "De Mellet", year: 1781, text: "The World. The universe, represented by Isis and the four seasons." },
+      { source: "Lévi", year: 1855, text: "The Hebrew letter Tau. Kether or the kabbalistic Crown: the microcosm, the sum of all in all." },
+      { source: "Christian", year: 1870, text: "Arcanum XXI. The Crown of the Magi: the Reward." },
+      { source: "Mathers", year: 1888, text: "The Universe. Completion, good reward.", reversed: "Evil reward, or recompense." },
+      { source: "Golden Dawn", year: 1888, text: "The Great One of the Night of Time. Universe. The matter itself. Synthesis. World. Kingdom." },
+      { source: "Grand Orient (Waite)", year: 1889, text: "The World. The glory thereof under the powers of the highest providence, the sum of manifest things." },
+      { source: "Waite", year: 1910, text: "The World. Assured success, recompense, voyage, route, emigration, flight, change of place.", reversed: "Inertia, fixity, stagnation, permanence." }
+    ]
+  },
+  // ═══════════════ MINOR ARCANA — WANDS ═══════════════
+  ...[
+    { id:"ace_of_wands", name:"Ace of Wands", numeral:"A",
+      i:[{s:"Mathers",y:1888,t:"Birth, commencement, beginning, origin, source.",r:"Persecution, pursuit, violence, vexation, cruelty, tyranny."},{s:"Golden Dawn",y:1888,t:"Root of the Powers of Fire. Force, strength, rush, vigor, energy."},{s:"Waite",y:1910,t:"Creation, invention, enterprise, the powers that result in these, principle, beginning, source, birth, family, origin.",r:"Fall, decadence, ruin, perdition, to perish, also a certain clouded joy."}]},
+    { id:"two_of_wands", name:"Two of Wands", numeral:"2",
+      i:[{s:"Mathers",y:1888,t:"Riches, fortune, opulence, magnificence, grandeur.",r:"Surprise, astonishment, event, extraordinary occurrence."},{s:"Golden Dawn",y:1888,t:"Lord of Dominion. Strength, dominion, harmony of rule and justice. Boldness, courage, fierceness."},{s:"Waite",y:1910,t:"Riches, fortune, magnificence; on the other, physical suffering, disease, chagrin, sadness, mortification.",r:"Surprise, wonder, enchantment, emotion, trouble, fear."}]},
+    { id:"three_of_wands", name:"Three of Wands", numeral:"3",
+      i:[{s:"Mathers",y:1888,t:"Enterprise, undertaking, commerce, trade, negotiation.",r:"Hope, desire, attempt, wish."},{s:"Golden Dawn",y:1888,t:"Lord of Established Strength. Established force and strength. Realization of hope. Completion of labor, success of the struggle."},{s:"Waite",y:1910,t:"Established strength, enterprise, effort, trade, commerce, discovery. Collaboration will favor enterprise.",r:"The end of troubles, suspension or end of adversity, toil, and disappointment."}]},
+    { id:"four_of_wands", name:"Four of Wands", numeral:"4",
+      i:[{s:"Mathers",y:1888,t:"Society, union, association, concord, harmony.",r:"Prosperity, success, happiness, advantage."},{s:"Golden Dawn",y:1888,t:"Lord of Perfected Work. Perfection, a completion of a thing built up with trouble and labor. Rest after labor."},{s:"Waite",y:1910,t:"Country life, haven of refuge, harvest home, repose, concord, harmony, prosperity, peace.",r:"The meaning remains unaltered, prosperity, increase, felicity, beauty, embellishment."}]},
+    { id:"five_of_wands", name:"Five of Wands", numeral:"5",
+      i:[{s:"Mathers",y:1888,t:"Gold, opulence, gain, heritage, riches, fortune, money.",r:"Legal proceedings, judgment, law, lawyer, tribunal."},{s:"Golden Dawn",y:1888,t:"Lord of Strife. Violent strife and contest, boldness, rashness, cruelty, violence, lust and desire."},{s:"Waite",y:1910,t:"Imitation, sham fight, the strenuous competition and struggle of the search after riches and fortune.",r:"Litigation, disputes, trickery, contradiction."}]},
+    { id:"six_of_wands", name:"Six of Wands", numeral:"6",
+      i:[{s:"Mathers",y:1888,t:"Attempt, hope, desire, wish, expectation.",r:"Infidelity, treachery, disloyalty, perfidy."},{s:"Golden Dawn",y:1888,t:"Lord of Victory. Victory after strife, success through energy and industry, love, pleasure gained by labor."},{s:"Waite",y:1910,t:"A victor triumphing, great news. Expectation crowned with its own desire, the crown of hope.",r:"Apprehension, fear, treachery, disloyalty. Also fulfillment of deferred hope."}]},
+    { id:"seven_of_wands", name:"Seven of Wands", numeral:"7",
+      i:[{s:"Mathers",y:1888,t:"Success, gain, advantage, profit, victory.",r:"Indecision, doubt, hesitation, embarrassment, anxiety."},{s:"Golden Dawn",y:1888,t:"Lord of Valor. Possible victory, depending on the energy and courage exercised; valor, opposition, obstacles, difficulties."},{s:"Waite",y:1910,t:"A card of valor, the vantage position, wordy strife, negotiations, war of trade, barter, competition, success.",r:"Perplexity, embarrassments, anxiety, a caution against indecision."}]},
+    { id:"eight_of_wands", name:"Eight of Wands", numeral:"8",
+      i:[{s:"Mathers",y:1888,t:"Understanding, observation, direction.",r:"Quarrels, intestine disputes, discord."},{s:"Golden Dawn",y:1888,t:"Lord of Swiftness. Too much force applied too suddenly. Very rapid rush, but too quickly passed. Courage, boldness, confidence, freedom."},{s:"Waite",y:1910,t:"Activity in undertakings, swiftness, great haste, great hope, speed toward an end that promises happiness.",r:"Internal dispute, stingings of conscience, quarrels, domestic disputes."}]},
+    { id:"nine_of_wands", name:"Nine of Wands", numeral:"9",
+      i:[{s:"Mathers",y:1888,t:"Order, discipline, good arrangement, disposition.",r:"Obstacles, crosses, delay, displeasure."},{s:"Golden Dawn",y:1888,t:"Lord of Great Strength. Tremendous and steady force that cannot be shaken. Herculean strength. Great success, but with strife and energy."},{s:"Waite",y:1910,t:"Strength in opposition. If attacked, the person will meet an onslaught boldly. Delay, suspension, adjournment.",r:"Obstacles, adversity, calamity."}]},
+    { id:"ten_of_wands", name:"Ten of Wands", numeral:"10",
+      i:[{s:"Mathers",y:1888,t:"Confidence, security, honor, good faith.",r:"Treachery, subterfuge, duplicity, bar."},{s:"Golden Dawn",y:1888,t:"Lord of Oppression. Cruel and overbearing force and energy, but applied only to selfish and material ends."},{s:"Waite",y:1910,t:"Oppression simply, also fortune, gain, any kind of success, and also the oppression of these things. A card of false-seeming, disguise, and perfidy.",r:"Contrarieties, difficulties, intrigues, and their analogies."}]},
+    { id:"page_of_wands", name:"Page of Wands", numeral:"Pg",
+      i:[{s:"Mathers",y:1888,t:"A good stranger, good news, pleasure, satisfaction.",r:"Ill news, displeasure, chagrin, worry."},{s:"Golden Dawn",y:1888,t:"Princess of the Shining Flame. Brilliance, courage, beauty, force, sudden in anger, or love, desire of power, enthusiasm."},{s:"Waite",y:1910,t:"Dark young man, faithful, a lover, an envoy, a postman. He has the chief qualities of his suit.",r:"Anecdotes, announcements, evil news. Also indecision and the instability that accompanies it."}]},
+    { id:"knight_of_wands", name:"Knight of Wands", numeral:"Kn",
+      i:[{s:"Mathers",y:1888,t:"Departure, separation, disunion.",r:"Rupture, discord, quarrel."},{s:"Golden Dawn",y:1888,t:"The Prince of the Chariot of Fire. Swift, strong, hasty, rather violent, yet just and generous, noble and scorning meanness."},{s:"Waite",y:1910,t:"Departure, absence, flight, emigration. A dark young man, friendly. Change of residence.",r:"Rupture, division, interruption, discord."}]},
+    { id:"queen_of_wands", name:"Queen of Wands", numeral:"Q",
+      i:[{s:"Mathers",y:1888,t:"A woman living in the country. Lady of the manor, love of money, avarice, usury.",r:"A good and virtuous woman, but strict and economical. Obstacles, resistance, opposition."},{s:"Golden Dawn",y:1888,t:"Queen of the Thrones of Flame. Adaptability, steady force applied to an object. Great attractive power, power of command."},{s:"Waite",y:1910,t:"A dark woman, countrywoman, friendly, chaste, loving, honorable. Love of money. A good harvest.",r:"Good, economical, obliging, serviceable. Opposition, jealousy, even deceit and infidelity."}]},
+    { id:"king_of_wands", name:"King of Wands", numeral:"K",
+      i:[{s:"Mathers",y:1888,t:"Man living in the country, country gentleman. Knowledge, education.",r:"A naturally good but severe man. Counsel, advice, deliberation."},{s:"Golden Dawn",y:1888,t:"The Lord of the Flame and the Lightning. King of the Spirits of Fire. Active, generous, fierce, sudden, and impetuous."},{s:"Waite",y:1910,t:"Dark man, friendly, countryman, generally married, honest, and conscientious. Honesty, and may mean news concerning an unexpected heritage.",r:"Good, but severe. August, yet tolerant. Also advice that should be followed."}]}
+  ].map(c=>({...c, type:"minor", suit:"wands", image:`cards/${c.id}.jpg`, interpretations: c.i.map(x=>({source:x.s,year:x.y,text:x.t,...(x.r?{reversed:x.r}:{})}))})),
+  // ═══════════════ MINOR ARCANA — CUPS ═══════════════
+  ...[
+    { id:"ace_of_cups", name:"Ace of Cups", numeral:"A",
+      i:[{s:"Mathers",y:1888,t:"Feasting, banquet, good cheer.",r:"Change, novelty, metamorphosis, inconstancy."},{s:"Golden Dawn",y:1888,t:"The Root of the Powers of Water. It symbolizes fertility, productiveness, beauty, pleasure, happiness."},{s:"Waite",y:1910,t:"House of the true heart, joy, content, abode, nourishment, abundance, fertility, holy table, felicity hereof.",r:"House of the false heart, mutation, instability, revolution, unexpected change of position."}]},
+    { id:"two_of_cups", name:"Two of Cups", numeral:"2",
+      i:[{s:"Mathers",y:1888,t:"Love, attachment, friendship, sincerity, affection.",r:"Crossed desires, obstacles, opposition, hindrance."},{s:"Golden Dawn",y:1888,t:"Lord of Love. Harmony of masculine and feminine united. Harmony, pleasure, mirth, subtlety."},{s:"Waite",y:1910,t:"Love, passion, friendship, affinity, union, concord, sympathy.",r:"Passion."}]},
+    { id:"three_of_cups", name:"Three of Cups", numeral:"3",
+      i:[{s:"Mathers",y:1888,t:"Success, triumph, victory, favorable issue.",r:"Expedition of business, quickness, celerity, vigilance."},{s:"Golden Dawn",y:1888,t:"Lord of Abundance. Abundance, plenty, success, pleasure, sensuality, passive success, good luck and fortune."},{s:"Waite",y:1910,t:"The conclusion of any matter in plenty, perfection, and merriment. Happy outcome, victory, fulfillment, solace, healing.",r:"Expedition, dispatch, achievement, end, excess in physical enjoyment."}]},
+    { id:"four_of_cups", name:"Four of Cups", numeral:"4",
+      i:[{s:"Mathers",y:1888,t:"Ennui, displeasure, discontent, dissatisfaction.",r:"New acquaintance, conjecture, sign, presentiment."},{s:"Golden Dawn",y:1888,t:"Lord of Blended Pleasure. Success or pleasure approaching its end. A stationary period in happiness that may not continue."},{s:"Waite",y:1910,t:"Weariness, disgust, aversion, imaginary vexations, blended pleasure, contrarieties.",r:"Novelty, presage, new instruction, new relations, presentiment."}]},
+    { id:"five_of_cups", name:"Five of Cups", numeral:"5",
+      i:[{s:"Mathers",y:1888,t:"Union, junction, marriage, inheritance.",r:"Arrival, return, news, surprise, false projects."},{s:"Golden Dawn",y:1888,t:"Lord of Loss in Pleasure. Death or end of pleasures: disappointment, sorrow and loss in those things from which pleasure is expected."},{s:"Waite",y:1910,t:"A card of loss. Inheritance, patrimony, legacies, gifts, but not according to expectations. With some, a card of marriage, but not without bitterness.",r:"News, alliances, affinity, consanguinity, ancestry, false projects."}]},
+    { id:"six_of_cups", name:"Six of Cups", numeral:"6",
+      i:[{s:"Mathers",y:1888,t:"The past, passed by, faded, vanished, disappeared.",r:"The future, that which is to come, shortly, soon."},{s:"Golden Dawn",y:1888,t:"Lord of Pleasure. Commencement of steady increase and pleasure, but commencement only."},{s:"Waite",y:1910,t:"Past and memories, looking back, as for example, on childhood, happiness, enjoyment from the past, pleasant memories.",r:"The future, renewal, that which will come to pass presently. Inheritance to fall in quickly."}]},
+    { id:"seven_of_cups", name:"Seven of Cups", numeral:"7",
+      i:[{s:"Mathers",y:1888,t:"Idea, sentiment, reflection.",r:"Plan, design, resolution, decision."},{s:"Golden Dawn",y:1888,t:"Lord of Illusionary Success. Possibly victory, but neutralized by the supineness of the person. Illusionary success. Deception in the moment of apparent victory."},{s:"Waite",y:1910,t:"Fairy favors, images of reflection, sentiment, imagination. Some attainment but nothing permanent is suggested.",r:"Will, determination, project."}]},
+    { id:"eight_of_cups", name:"Eight of Cups", numeral:"8",
+      i:[{s:"Mathers",y:1888,t:"A fair girl, friendship, attachment, tenderness.",r:"Gaiety, feasting, joy, pleasure."},{s:"Golden Dawn",y:1888,t:"Lord of Abandoned Success. Temporary success, but without further result. Things thrown aside as soon as gained. Journeying from place to place."},{s:"Waite",y:1910,t:"Decline of a matter, or that a matter thought important is really of slight consequence.",r:"Great joy, happiness, feasting, perfect satisfaction."}]},
+    { id:"nine_of_cups", name:"Nine of Cups", numeral:"9",
+      i:[{s:"Mathers",y:1888,t:"Victory, advantage, success, triumph, difficulties surmounted.",r:"Faults, errors, mistakes, imperfections."},{s:"Golden Dawn",y:1888,t:"Lord of Material Happiness. Complete and perfect realization of pleasure and happiness almost perfect."},{s:"Waite",y:1910,t:"Concord, contentment, physical well-being, victory, success, advantage, satisfaction.",r:"Truth, loyalty, liberty, good business, but the readings vary and include mistakes and imperfections."}]},
+    { id:"ten_of_cups", name:"Ten of Cups", numeral:"10",
+      i:[{s:"Mathers",y:1888,t:"The town wherein one resides, honor, consideration, esteem, virtue, glory, reputation.",r:"Combat, strife, opposition, differences, dispute."},{s:"Golden Dawn",y:1888,t:"Lord of Perfected Success. Permanent and lasting success, happiness because inspired from above."},{s:"Waite",y:1910,t:"Contentment, repose of the entire heart, the perfection of that state, also the perfection of human love and friendship.",r:"Repose of the false heart, indignation, violence, sorrow."}]},
+    { id:"page_of_cups", name:"Page of Cups", numeral:"Pg",
+      i:[{s:"Mathers",y:1888,t:"A fair youth, confidence, probity, discretion, integrity.",r:"A flatterer, deception, artifice."},{s:"Golden Dawn",y:1888,t:"Princess of the Waters and Lotus of the Palace of the Floods. Sweetness, poetry, gentleness, and kindness."},{s:"Waite",y:1910,t:"Fair young man, one impelled to render service. A studious youth. News, message, good augury, application, reflection, meditation.",r:"Taste, inclination, attachment, seduction, deception, artifice, obstacles of all kinds."}]},
+    { id:"knight_of_cups", name:"Knight of Cups", numeral:"Kn",
+      i:[{s:"Mathers",y:1888,t:"Arrival, approach, advance.",r:"Duplicity, abuse of confidence, fraud, cunning."},{s:"Golden Dawn",y:1888,t:"Prince of the Chariot of the Waters. Subtle, violent, crafty, and artistic. Powerful for good or evil."},{s:"Waite",y:1910,t:"Arrival, approach, sometimes that of a messenger. Advances, proposition, demeanor, invitation, incitement.",r:"Trickery, artifice, subtlety, swindling, duplicity, fraud."}]},
+    { id:"queen_of_cups", name:"Queen of Cups", numeral:"Q",
+      i:[{s:"Mathers",y:1888,t:"A fair woman, success, happiness, advantage, pleasure.",r:"A woman in good position, but intermeddling. Success, but with some attendant trouble."},{s:"Golden Dawn",y:1888,t:"Queen of the Thrones of the Waters. Imaginative, poetic, kind, yet not willing to take much trouble for another."},{s:"Waite",y:1910,t:"A fair woman, honest, devoted, who will do service to the inquirer. Loving intelligence. Success, happiness, pleasure.",r:"Good woman, otherwise not to be trusted. Vice, dishonor, depravity."}]},
+    { id:"king_of_cups", name:"King of Cups", numeral:"K",
+      i:[{s:"Mathers",y:1888,t:"A fair-haired man, goodness, kindness, liberality, generosity.",r:"A man of good position, but shifty in his dealings. Distrust, doubt, suspicion."},{s:"Golden Dawn",y:1888,t:"Lord of the Waves and the Waters. King of the Hosts of the Sea. Graceful, poetic, Venusian, indolent, but enthusiastic if roused."},{s:"Waite",y:1910,t:"Fair man, a man of business, law, or divinity. Responsible, disposed to oblige the inquirer. Equity, art and science.",r:"Dishonest, double-dealing man. Roguery, exaction, injustice, vice, scandal, loss."}]}
+  ].map(c=>({...c, type:"minor", suit:"cups", image:`cards/${c.id}.jpg`, interpretations: c.i.map(x=>({source:x.s,year:x.y,text:x.t,...(x.r?{reversed:x.r}:{})}))})),
+  // ═══════════════ MINOR ARCANA — SWORDS ═══════════════
+  ...[
+    { id:"ace_of_swords", name:"Ace of Swords", numeral:"A",
+      i:[{s:"Mathers",y:1888,t:"Triumph, fecundity, fertility, prosperity.",r:"Embarrassment, foolish and hopeless love, obstacle, hindrance."},{s:"Golden Dawn",y:1888,t:"The Root of the Powers of Air. Very great power for good or evil, but invoked. Affirmation of Justice, upholding divine authority."},{s:"Waite",y:1910,t:"Triumph, the excessive degree in everything, conquest, the triumph of force. A card of great force, in love as well as hatred.",r:"The same, but the results are disastrous. Conception, childbirth, augmentation, multiplicity."}]},
+    { id:"two_of_swords", name:"Two of Swords", numeral:"2",
+      i:[{s:"Mathers",y:1888,t:"Friendship, valor, firmness, courage.",r:"False friends, treachery, lies."},{s:"Golden Dawn",y:1888,t:"Lord of Peace Restored. Contradictory characteristics in the same nature. Strength through suffering. Peace restored, truce."},{s:"Waite",y:1910,t:"Conformity and the equipoise that it suggests, courage, friendship, concord in a state of arms, affection, intimacy.",r:"Imposture, falsehood, duplicity, disloyalty, dealings with rogues."}]},
+    { id:"three_of_swords", name:"Three of Swords", numeral:"3",
+      i:[{s:"Mathers",y:1888,t:"A nun, separation, removal, rupture, quarrel.",r:"Error, confusion, misrule, disorder."},{s:"Golden Dawn",y:1888,t:"Lord of Sorrow. Disruption, interruption, separation, quarreling, sowing of discord and strife, sorrow, tears."},{s:"Waite",y:1910,t:"Removal, absence, delay, division, rupture, dispersion, for a woman the flight of her lover.",r:"Mental alienation, error, loss, distraction, disorder, confusion."}]},
+    { id:"four_of_swords", name:"Four of Swords", numeral:"4",
+      i:[{s:"Mathers",y:1888,t:"Solitude, retreat, abandonment, solitary, hermit.",r:"Economy, precaution, regulation of expenditure."},{s:"Golden Dawn",y:1888,t:"Lord of Rest from Strife. Rest from sorrow, yet after and through it. Peace from and after war. Relaxation of anxiety."},{s:"Waite",y:1910,t:"Vigilance, retreat, solitude, hermit's repose, exile, tomb and coffin.",r:"Wise administration, circumspection, economy, avarice, precaution, testament."}]},
+    { id:"five_of_swords", name:"Five of Swords", numeral:"5",
+      i:[{s:"Mathers",y:1888,t:"Mourning, sadness, affliction.",r:"Losses, trouble."},{s:"Golden Dawn",y:1888,t:"Lord of Defeat. Contest finished, and decided against the person, failure, defeat, anxiety, trouble, poverty."},{s:"Waite",y:1910,t:"Degradation, destruction, revocation, infamy, dishonor, loss. An attack on the fortune of the inquirer.",r:"The same. Burial and obsequies. A sign of sorrow and mourning."}]},
+    { id:"six_of_swords", name:"Six of Swords", numeral:"6",
+      i:[{s:"Mathers",y:1888,t:"Envoy, messenger, voyage, travel.",r:"Declaration, love proposed, revelation, surprise."},{s:"Golden Dawn",y:1888,t:"Lord of Earned Success. Success after anxiety and trouble. Selfishness, beauty, conceit, but sometimes modesty therewith."},{s:"Waite",y:1910,t:"Journey by water, route, way, envoy, commissionary, expedient, the voyage will be pleasant.",r:"Declaration, confession, publicity. Unfavorable issue of a lawsuit."}]},
+    { id:"seven_of_swords", name:"Seven of Swords", numeral:"7",
+      i:[{s:"Mathers",y:1888,t:"Hope, confidence, desire, attempt, wish.",r:"Wise advice, good counsel, wisdom, prudence, circumspection."},{s:"Golden Dawn",y:1888,t:"Lord of Unstable Effort. Partial success, yielding when victory is within grasp. Inclination to betray confidences."},{s:"Waite",y:1910,t:"Design, attempt, wish, hope, confidence, quarreling, a plan that may fail, annoyance.",r:"Good advice probably neglected, counsel, instruction, slander, babbling."}]},
+    { id:"eight_of_swords", name:"Eight of Swords", numeral:"8",
+      i:[{s:"Mathers",y:1888,t:"Sickness, calumny, criticism, blame.",r:"Treachery in the past, event, accident, remarkable incident."},{s:"Golden Dawn",y:1888,t:"Lord of Shortened Force. Too much force applied to small things, too much attention to detail, at expense of principle."},{s:"Waite",y:1910,t:"Bad news, violent chagrin, crisis, censure, power in trammels, conflict, calumny, sickness.",r:"Disquiet, difficulty, opposition, accident, treachery, fatality, what is unforeseen."}]},
+    { id:"nine_of_swords", name:"Nine of Swords", numeral:"9",
+      i:[{s:"Mathers",y:1888,t:"An ecclesiastic, priest, conscience, probity, good faith, integrity.",r:"Wise distrust, suspicion, fear, doubt, shady character."},{s:"Golden Dawn",y:1888,t:"Lord of Despair and Cruelty. Despair, cruelty, pitilessness, malice, suffering, want, loss, misery."},{s:"Waite",y:1910,t:"An ecclesiastic, a priest, generally a card of bad omen, predicting death, failure, miscarriage, delay, deception, disappointment, despair.",r:"Imprisonment, suspicion, doubt, reasonable fear, shame."}]},
+    { id:"ten_of_swords", name:"Ten of Swords", numeral:"10",
+      i:[{s:"Mathers",y:1888,t:"Tears, affliction, grief, sorrow.",r:"Passing success, momentary advantage."},{s:"Golden Dawn",y:1888,t:"Lord of Ruin. Undisciplined warring force, complete disruption and failure. Ruin of all plans and projects."},{s:"Waite",y:1910,t:"Pain, affliction, tears, sadness, desolation. It is not especially a card of violent death.",r:"Advantage, profit, success, favor, but none of these are permanent. Also power and authority."}]},
+    { id:"page_of_swords", name:"Page of Swords", numeral:"Pg",
+      i:[{s:"Mathers",y:1888,t:"A spy, overlooking, authority.",r:"That which is unforeseen, vigilance, support."},{s:"Golden Dawn",y:1888,t:"Princess of the Rushing Winds. Wisdom, strength, acuteness, subtleness in material things, grace and dexterity."},{s:"Waite",y:1910,t:"Authority, overseeing, secret service, vigilance, spying, examination. An indiscreet person will pry into the Querent's secrets.",r:"More evil side of these qualities. What is unforeseen, unprepared state. Sickness is also intimated."}]},
+    { id:"knight_of_swords", name:"Knight of Swords", numeral:"Kn",
+      i:[{s:"Mathers",y:1888,t:"A soldier, a man whose profession is arms, skillfulness, capacity, address, promptitude.",r:"A conceited fool, ingenuousness, simplicity."},{s:"Golden Dawn",y:1888,t:"Prince of the Chariots of the Winds. Full of ideas and thoughts and designs, distrustful, suspicious, firm in friendship and enmity."},{s:"Waite",y:1910,t:"A soldier, man of arms. Heroic action predicted for soldier. Skill, bravery, capacity, defense, enmity, wrath, war, destruction.",r:"Imprudence, incapacity, extravagance. Dispute with an imbecile person."}]},
+    { id:"queen_of_swords", name:"Queen of Swords", numeral:"Q",
+      i:[{s:"Mathers",y:1888,t:"Widowhood, loss, privation, absence, separation.",r:"A bad woman, ill-tempered and bigoted. Riches and Discord."},{s:"Golden Dawn",y:1888,t:"Queen of the Thrones of Air. Intensely perceptive, keen observation, subtle, quick, confident."},{s:"Waite",y:1910,t:"Widowhood, female sadness and embarrassment, absence, sterility, mourning, privation, separation.",r:"A bad woman. Malice, bigotry, artifice, prudery, deceit."}]},
+    { id:"king_of_swords", name:"King of Swords", numeral:"K",
+      i:[{s:"Mathers",y:1888,t:"A lawyer, man of law, power, command, superiority, authority.",r:"A wicked man, chagrin, worry, grief, fear, disturbance."},{s:"Golden Dawn",y:1888,t:"Lord of the Winds and Breezes. King of the Spirits of Air. Active, clever, subtle, fierce, delicate, courageous, skillful."},{s:"Waite",y:1910,t:"Power, command, authority, militant intelligence, law, offices of the crown. Hence also a lawyer, senator, doctor.",r:"A bad man. Cruelty, perversity, barbarity, perfidy, evil intention."}]}
+  ].map(c=>({...c, type:"minor", suit:"swords", image:`cards/${c.id}.jpg`, interpretations: c.i.map(x=>({source:x.s,year:x.y,text:x.t,...(x.r?{reversed:x.r}:{})}))})),
+  // ═══════════════ MINOR ARCANA — PENTACLES ═══════════════
+  ...[
+    { id:"ace_of_pentacles", name:"Ace of Pentacles", numeral:"A",
+      i:[{s:"Mathers",y:1888,t:"Perfect contentment, felicity, prosperity, triumph.",r:"Purse of gold, money, help, profit, riches."},{s:"Golden Dawn",y:1888,t:"The Root of the Powers of Earth. Materiality in all senses, good and evil. Material gain, labor, power, wealth."},{s:"Waite",y:1910,t:"Perfect contentment, ecstasy, speedy intelligence, gold.",r:"The evil side of wealth, bad intelligence, great riches."}]},
+    { id:"two_of_pentacles", name:"Two of Pentacles", numeral:"2",
+      i:[{s:"Mathers",y:1888,t:"Embarrassment, worry, difficulties.",r:"Letter, missive, epistle, message."},{s:"Golden Dawn",y:1888,t:"Lord of Harmonious Change. Harmony of change. Alternation of gain and loss, weakness and strength, ever-varying occupation."},{s:"Waite",y:1910,t:"A card of gaiety, recreation and its connections. Also news and messages in writing, as obstacles, agitation, trouble.",r:"Enforced gaiety, simulated enjoyment, literal sense, handwriting, letters of exchange."}]},
+    { id:"three_of_pentacles", name:"Three of Pentacles", numeral:"3",
+      i:[{s:"Mathers",y:1888,t:"Nobility, elevation, dignity, rank, power.",r:"Children, sons, daughters, youths, commencement."},{s:"Golden Dawn",y:1888,t:"The Lord of Material Works. Working and constructive force, building up, creation, realization, and increase of material things."},{s:"Waite",y:1910,t:"Vocation, trade, skilled labor. A card of nobility, aristocracy, renown, glory.",r:"Mediocrity, in work and otherwise. Puerility, pettiness, weakness."}]},
+    { id:"four_of_pentacles", name:"Four of Pentacles", numeral:"4",
+      i:[{s:"Mathers",y:1888,t:"Pleasure, gaiety, enjoyment, satisfaction.",r:"Obstacles, hindrances."},{s:"Golden Dawn",y:1888,t:"The Lord of Earthly Power. Assured material gain, success, rank, dominion, earthly power completed, but leading to nothing beyond."},{s:"Waite",y:1910,t:"The surety of possessions, cleaving to that which one has, gift, legacy, inheritance.",r:"Delay, opposition."}]},
+    { id:"five_of_pentacles", name:"Five of Pentacles", numeral:"5",
+      i:[{s:"Mathers",y:1888,t:"Lover or mistress, love, sweetness, affection, pure and chaste love.",r:"Disgraceful love, imprudence, license, profligacy."},{s:"Golden Dawn",y:1888,t:"The Lord of Material Trouble. Loss of money or position. Toil, labor, poverty, carefulness."},{s:"Waite",y:1910,t:"Material trouble, destitution or otherwise. For some, a card of love and lovers.",r:"Disorder, chaos, ruin, discord, profligacy, troubles in love."}]},
+    { id:"six_of_pentacles", name:"Six of Pentacles", numeral:"6",
+      i:[{s:"Mathers",y:1888,t:"Presents, gifts, gratification.",r:"Ambition, desire, passion, aim, longing."},{s:"Golden Dawn",y:1888,t:"Lord of Material Success. Success and gain in material undertakings, power, influence, rank, nobility."},{s:"Waite",y:1910,t:"Presents, gifts, gratification. Another account says attention, vigilance. Present prosperity.",r:"Desire, cupidity, envy, jealousy, illusion."}]},
+    { id:"seven_of_pentacles", name:"Seven of Pentacles", numeral:"7",
+      i:[{s:"Mathers",y:1888,t:"Money, finance, treasure, gain, profit.",r:"Disturbance, worry, anxiety, melancholy."},{s:"Golden Dawn",y:1888,t:"Lord of Success Unfulfilled. Loss of an apparently promising fortune. Hopes deceived and crushed. Disappointment."},{s:"Waite",y:1910,t:"A card of money, business, barter. Also altercation, quarrel, and another innocence, ingenuousness, purgation.",r:"Impatience, apprehension, suspicion, cause for anxiety regarding money."}]},
+    { id:"eight_of_pentacles", name:"Eight of Pentacles", numeral:"8",
+      i:[{s:"Mathers",y:1888,t:"A dark girl, beauty, candor, chastity, innocence, modesty.",r:"Flattery, usury, hypocrisy, shifty."},{s:"Golden Dawn",y:1888,t:"Lord of Prudence. Over-careful in small things at the expense of the great. Gain of ready money in small sums."},{s:"Waite",y:1910,t:"Work, employment, commission, craftsmanship, skill in craft and business, perhaps in the preparatory stage.",r:"Voided ambition, vanity, exaction, usury."}]},
+    { id:"nine_of_pentacles", name:"Nine of Pentacles", numeral:"9",
+      i:[{s:"Mathers",y:1888,t:"Discretion, circumspection, prudence, discernment.",r:"Deceit, bad faith, artifices, deception."},{s:"Golden Dawn",y:1888,t:"Lord of Material Gain. Complete realization of material gain, inheritance, covetousness, treasuring of goods."},{s:"Waite",y:1910,t:"Prudence, safety, success, accomplishment, certitude, discernment, prompt fulfillment of what is presaged by neighboring cards.",r:"Roguery, deception, voided project, bad faith, vain hopes."}]},
+    { id:"ten_of_pentacles", name:"Ten of Pentacles", numeral:"10",
+      i:[{s:"Mathers",y:1888,t:"House, dwelling, habitation, family.",r:"Gambling, dissipation, robbery, loss."},{s:"Golden Dawn",y:1888,t:"Lord of Wealth. Completion of material gain and fortune, but nothing beyond, at the very pinnacle of success."},{s:"Waite",y:1910,t:"Gain, riches, family matters, archives, extraction, house or dwelling, the abode of a family.",r:"Chance, fatality, loss, robbery, games of hazard, sometimes gift, dowry, pension."}]},
+    { id:"page_of_pentacles", name:"Page of Pentacles", numeral:"Pg",
+      i:[{s:"Mathers",y:1888,t:"A dark youth, household economy, rule, management.",r:"Prodigality, profusion, waste, dissipation."},{s:"Golden Dawn",y:1888,t:"Princess of the Echoing Hills. Rose of the Palace of Earth. Generous, kind, diligent, benevolent, careful, courageous."},{s:"Waite",y:1910,t:"A dark youth; a young officer or soldier; a child. Application, study, scholarship, reflection, news, messages.",r:"Prodigality, dissipation, liberality, luxury. Unfavorable news."}]},
+    { id:"knight_of_pentacles", name:"Knight of Pentacles", numeral:"Kn",
+      i:[{s:"Mathers",y:1888,t:"A useful man, trustworthy, wisdom, economy, order, regulation.",r:"A brave man, but out of employment, idle, unemployed, negligent."},{s:"Golden Dawn",y:1888,t:"Prince of the Chariot of Earth. Increase of matter, increase of good and evil, solidifies, practically applies things, steady, reliable."},{s:"Waite",y:1910,t:"Utility, serviceableness, interest, responsibility, rectitude. A useful man, useful discoveries.",r:"Inertia, idleness, repose of that kind. Stagnation, placidity, discouragement, carelessness."}]},
+    { id:"queen_of_pentacles", name:"Queen of Pentacles", numeral:"Q",
+      i:[{s:"Mathers",y:1888,t:"A dark woman, a generous woman, liberality, greatness of soul, generosity.",r:"Certain evil, a suspicious woman, doubt, mistrust."},{s:"Golden Dawn",y:1888,t:"Queen of the Thrones of Earth. Impetuous, kind, timid, rather charming, greathearted, intelligent, melancholy, truthful."},{s:"Waite",y:1910,t:"Opulence, generosity, magnificence, security, liberty. A dark woman.",r:"Evil, suspicion, suspense, fear, mistrust, illness."}]},
+    { id:"king_of_pentacles", name:"King of Pentacles", numeral:"K",
+      i:[{s:"Mathers",y:1888,t:"A dark man, victory, bravery, courage, success.",r:"An old and vicious man, a dangerous man, doubt, fear, peril, danger."},{s:"Golden Dawn",y:1888,t:"Lord of the Wild and Fertile Land. King of the Spirits of the Earth. Unless very well dignified, he is heavy, dull, and material."},{s:"Waite",y:1910,t:"A rather dark man, a merchant, master, professor. Valor, realizing intelligence, business and normal intellectual aptitude.",r:"An old and vicious man. Vice, weakness, ugliness, perversity, corruption, peril."}]}
+  ].map(c=>({...c, type:"minor", suit:"pentacles", image:`cards/${c.id}.jpg`, interpretations: c.i.map(x=>({source:x.s,year:x.y,text:x.t,...(x.r?{reversed:x.r}:{})}))})),
+];
+
+// ─────────────────────────────────────────────────────────
+// I18N Stub
+// ─────────────────────────────────────────────────────────
+const T = {
+  en: {
+    title: "The Rider–Waite Historical Codex",
+    subtitle: "A Compendium of Cartomantic Tradition",
+    codex: "The Codex", reading: "Reading", all: "All", majorArcana: "Major Arcana",
+    wands: "Wands", cups: "Cups", swords: "Swords", pentacles: "Pentacles",
+    search: "Search cards…", basicReading: "Basic Reading", advancedReading: "Advanced Reading",
+    past: "Past", present: "Present", future: "Future", reversed: "Reversed", upright: "Upright",
+    mundaneQ: "Is your question mundane?", yes: "Yes", no: "No",
+    higherInfluences: "Higher Influences", significator: "Significator",
+    favorable: "Favorable Influences", opposing: "Opposing Forces",
+    shuffling: "Shuffling the deck…", drawCards: "Draw Cards", newReading: "New Reading",
+    interpretation: "Interpretation", viewInCodex: "View in Codex",
+    backToCodex: "Back to Codex", close: "Close",
+    basicDesc: "Three-Card Spread — Past, Present, Future",
+    advancedDesc: "The Hexagram — Significator & Six Influences",
+    askQuestion: "Concentrate on your question…",
+    top: "Top", topRight: "Top-Right", bottomRight: "Bottom-Right",
+    bottom: "Bottom", bottomLeft: "Bottom-Left", topLeft: "Top-Left",
+  },
+  ru: {
+    title: "Историческій Кодексъ Райдера–Уэйта",
+    subtitle: "Russian Translation Pending",
+    codex: "Кодексъ", reading: "Гаданіе", all: "Всѣ", majorArcana: "Старшіе Арканы",
+    wands: "Жезлы", cups: "Кубки", swords: "Мечи", pentacles: "Пентакли",
+    search: "Russian Translation Pending", basicReading: "Russian Translation Pending",
+    advancedReading: "Russian Translation Pending", past: "Russian Translation Pending",
+    present: "Russian Translation Pending", future: "Russian Translation Pending",
+    reversed: "Russian Translation Pending", upright: "Russian Translation Pending",
+    mundaneQ: "Russian Translation Pending", yes: "Russian Translation Pending",
+    no: "Russian Translation Pending", higherInfluences: "Russian Translation Pending",
+    significator: "Russian Translation Pending", favorable: "Russian Translation Pending",
+    opposing: "Russian Translation Pending", shuffling: "Russian Translation Pending",
+    drawCards: "Russian Translation Pending", newReading: "Russian Translation Pending",
+    interpretation: "Russian Translation Pending", viewInCodex: "Russian Translation Pending",
+    backToCodex: "Russian Translation Pending", close: "Russian Translation Pending",
+    basicDesc: "Russian Translation Pending", advancedDesc: "Russian Translation Pending",
+    askQuestion: "Russian Translation Pending", top: "Russian Translation Pending",
+    topRight: "Russian Translation Pending", bottomRight: "Russian Translation Pending",
+    bottom: "Russian Translation Pending", bottomLeft: "Russian Translation Pending",
+    topLeft: "Russian Translation Pending",
+  }
+};
+
+// ─────────────────────────────────────────────────────────
+// UTILITY FUNCTIONS
+// ─────────────────────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function drawCards(deck, n) {
+  const shuffled = shuffle(deck);
+  return shuffled.slice(0, n).map(card => ({
+    ...card,
+    isReversed: Math.random() < 0.5
+  }));
+}
+
+function generateInterpretation(cards, lang) {
+  return cards.map(({ card, position, isReversed }) => {
+    const waite = card.interpretations.find(i => i.source === "Waite");
+    const gd = card.interpretations.find(i => i.source === "Golden Dawn");
+    let text = "";
+    if (waite) {
+      text += isReversed && waite.reversed ? waite.reversed : waite.text;
+    }
+    if (gd) {
+      text += " " + gd.text;
+    }
+    return `**${card.name}** (${position}, ${isReversed ? "Reversed" : "Upright"}): ${text}`;
+  }).join("\n\n");
+}
+
+// ─────────────────────────────────────────────────────────
+// CARD PLACEHOLDER SVG
+// ─────────────────────────────────────────────────────────
+function CardPlaceholder({ card, isReversed, size = "normal", onClick }) {
+  const suitColors = { wands: "#c44", cups: "#48a", swords: "#888", pentacles: "#b90" };
+  const bg = card.type === "major" ? "#2a1f3d" : (suitColors[card.suit] || "#333");
+  const w = size === "small" ? 90 : size === "large" ? 200 : 140;
+  const h = Math.round(w * 1.56);
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        width: w, height: h, borderRadius: 6, overflow: "hidden", cursor: onClick ? "pointer" : "default",
+        border: "1px solid rgba(196,163,90,0.3)", position: "relative", flexShrink: 0,
+        transform: isReversed ? "rotate(180deg)" : "none",
+        transition: "transform 0.6s ease, box-shadow 0.3s ease",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+      }}
+    >
+      <div style={{
+        width: "100%", height: "100%", background: `linear-gradient(135deg, ${bg}, ${bg}dd)`,
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        padding: 8, textAlign: "center", fontFamily: "'Playfair Display', serif",
+      }}>
+        <div style={{ fontSize: w > 140 ? 28 : 18, color: "#c4a35a", marginBottom: 4, fontWeight: 700 }}>
+          {card.numeral}
+        </div>
+        <div style={{
+          fontSize: w > 140 ? 13 : w > 100 ? 11 : 9, color: "#e8e4dc", lineHeight: 1.3,
+          transform: isReversed ? "rotate(180deg)" : "none",
+        }}>
+          {card.name}
+        </div>
+        {card.suit && (
+          <div style={{
+            fontSize: w > 140 ? 10 : 8, color: "#9a9590", marginTop: 4, textTransform: "uppercase",
+            letterSpacing: 2, transform: isReversed ? "rotate(180deg)" : "none",
+          }}>
+            {card.suit}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// CARD DETAIL DRAWER
+// ─────────────────────────────────────────────────────────
+function CardDetail({ card, onClose, t }) {
+  if (!card) return null;
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 1000, display: "flex",
+      animation: "fadeIn 0.3s ease",
+    }}>
+      <div onClick={onClose} style={{
+        position: "absolute", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)",
+      }} />
+      <div style={{
+        position: "relative", marginLeft: "auto", width: "min(720px, 90vw)", height: "100vh",
+        background: "#1a1816", borderLeft: "1px solid rgba(196,163,90,0.2)",
+        overflowY: "auto", display: "flex", flexDirection: "column",
+        animation: "slideIn 0.4s ease",
+      }}>
+        <button onClick={onClose} style={{
+          position: "sticky", top: 12, right: 12, alignSelf: "flex-end", marginRight: 16, marginTop: 12,
+          background: "none", border: "1px solid rgba(196,163,90,0.3)", color: "#c4a35a",
+          padding: "6px 16px", cursor: "pointer", fontFamily: "'EB Garamond', serif", fontSize: 14, borderRadius: 3, zIndex: 2,
+        }}>
+          {t.close} ✕
+        </button>
+        <div style={{ display: "flex", gap: 32, padding: "20px 32px 32px", flexWrap: "wrap", alignItems: "flex-start" }}>
+          <CardPlaceholder card={card} size="large" />
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <div style={{ fontSize: 11, color: "#c4a35a", textTransform: "uppercase", letterSpacing: 3, marginBottom: 6, fontFamily: "sans-serif" }}>
+              {card.type === "major" ? "Major Arcana" : card.suit}
+            </div>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, color: "#e8e4dc", margin: "0 0 4px", fontWeight: 400 }}>
+              {card.numeral && <span style={{ color: "#c4a35a", marginRight: 8 }}>{card.numeral}</span>}
+              {card.name}
+            </h2>
+          </div>
+        </div>
+        <div style={{ padding: "0 32px 48px" }}>
+          <div style={{
+            fontSize: 12, color: "#c4a35a", textTransform: "uppercase", letterSpacing: 3,
+            marginBottom: 20, fontFamily: "sans-serif",
+            borderBottom: "1px solid rgba(196,163,90,0.15)", paddingBottom: 10,
+          }}>
+            Historical Interpretations
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            {card.interpretations.map((interp, idx) => (
+              <div key={idx} style={{
+                borderLeft: "2px solid rgba(196,163,90,0.2)", paddingLeft: 20, paddingBottom: 20,
+                position: "relative",
+              }}>
+                <div style={{
+                  position: "absolute", left: -5, top: 0, width: 8, height: 8, borderRadius: "50%",
+                  background: "#c4a35a",
+                }} />
+                <div style={{
+                  fontFamily: "sans-serif", fontSize: 11, color: "#c4a35a",
+                  textTransform: "uppercase", letterSpacing: 1, marginBottom: 6,
+                }}>
+                  {interp.source} ({interp.year})
+                </div>
+                <div style={{
+                  fontFamily: "'EB Garamond', serif", fontSize: 16, color: "#d4d0c8",
+                  lineHeight: 1.65,
+                }}>
+                  {interp.text}
+                </div>
+                {interp.reversed && (
+                  <div style={{
+                    fontFamily: "'EB Garamond', serif", fontSize: 15, color: "#a08070",
+                    lineHeight: 1.6, marginTop: 6, fontStyle: "italic",
+                  }}>
+                    <span style={{ color: "#c4a35a", fontSize: 11, fontFamily: "sans-serif", fontStyle: "normal", letterSpacing: 1 }}>REVERSED: </span>
+                    {interp.reversed}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// CODEX VIEW
+// ─────────────────────────────────────────────────────────
+function CodexView({ t, onSelectCard }) {
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    let cards = CARDS;
+    if (filter === "major") cards = cards.filter(c => c.type === "major");
+    else if (filter !== "all") cards = cards.filter(c => c.suit === filter);
+    if (search) cards = cards.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
+    return cards;
+  }, [filter, search]);
+
+  const filters = [
+    { key: "all", label: t.all },
+    { key: "major", label: t.majorArcana },
+    { key: "wands", label: t.wands },
+    { key: "cups", label: t.cups },
+    { key: "swords", label: t.swords },
+    { key: "pentacles", label: t.pentacles },
+  ];
+
+  return (
+    <div style={{ padding: "24px 0" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 24, padding: "0 24px" }}>
+        {filters.map(f => (
+          <button key={f.key} onClick={() => setFilter(f.key)} style={{
+            background: filter === f.key ? "rgba(196,163,90,0.15)" : "transparent",
+            border: `1px solid ${filter === f.key ? "rgba(196,163,90,0.5)" : "rgba(196,163,90,0.15)"}`,
+            color: filter === f.key ? "#c4a35a" : "#9a9590",
+            padding: "6px 16px", borderRadius: 3, cursor: "pointer",
+            fontFamily: "sans-serif", fontSize: 11, textTransform: "uppercase", letterSpacing: 1.5,
+            transition: "all 0.2s ease",
+          }}>
+            {f.label}
+          </button>
+        ))}
+        <input
+          value={search} onChange={e => setSearch(e.target.value)}
+          placeholder={t.search}
+          style={{
+            background: "rgba(255,255,255,0.04)", border: "1px solid rgba(196,163,90,0.15)",
+            color: "#e8e4dc", padding: "7px 14px", borderRadius: 3, marginLeft: "auto",
+            fontFamily: "'EB Garamond', serif", fontSize: 14, outline: "none", width: 200,
+          }}
+        />
+      </div>
+      <div style={{
+        display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+        gap: 16, padding: "0 24px",
+      }}>
+        {filtered.map(card => (
+          <div key={card.id} style={{
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+            transition: "transform 0.2s ease",
+          }}
+            onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
+            onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+          >
+            <CardPlaceholder card={card} onClick={() => onSelectCard(card)} />
+            <div style={{
+              fontFamily: "'EB Garamond', serif", fontSize: 12, color: "#9a9590", textAlign: "center",
+            }}>
+              {card.name}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// BASIC READING VIEW (3-Card Spread)
+// ─────────────────────────────────────────────────────────
+function BasicReading({ t, onViewCard }) {
+  const [step, setStep] = useState("ask"); // ask, mundane, shuffling, reveal
+  const [isMundane, setIsMundane] = useState(null);
+  const [mainCards, setMainCards] = useState([]);
+  const [overlayCards, setOverlayCards] = useState([]);
+  const [interpText, setInterpText] = useState("");
+
+  const doReading = useCallback((mundane) => {
+    setIsMundane(mundane);
+    setStep("shuffling");
+    setTimeout(() => {
+      const pool = mundane ? CARDS.filter(c => c.type === "minor") : CARDS;
+      const drawn = drawCards(pool, 3);
+      setMainCards(drawn);
+      let overlay = [];
+      if (!mundane) {
+        const majorPool = CARDS.filter(c => c.type === "major" && !drawn.find(d => d.id === c.id));
+        overlay = drawCards(majorPool, 3);
+        setOverlayCards(overlay);
+      }
+      const positions = [t.past, t.present, t.future];
+      const allForInterp = drawn.map((c, i) => ({
+        card: c, position: positions[i], isReversed: c.isReversed
+      }));
+      if (overlay.length) {
+        overlay.forEach((c, i) => {
+          allForInterp.push({ card: c, position: `${t.higherInfluences} — ${positions[i]}`, isReversed: c.isReversed });
+        });
+      }
+      setInterpText(generateInterpretation(allForInterp));
+      setStep("reveal");
+    }, 1800);
+  }, [t]);
+
+  const reset = () => {
+    setStep("ask"); setMainCards([]); setOverlayCards([]); setInterpText(""); setIsMundane(null);
+  };
+
+  if (step === "ask") {
+    return (
+      <div style={{ textAlign: "center", padding: "80px 24px" }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, color: "#e8e4dc", marginBottom: 12 }}>
+          {t.basicReading}
+        </div>
+        <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 16, color: "#9a9590", marginBottom: 40 }}>
+          {t.basicDesc}
+        </div>
+        <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 18, color: "#d4d0c8", marginBottom: 24 }}>
+          {t.mundaneQ}
+        </div>
+        <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
+          {[{ label: t.yes, val: true }, { label: t.no, val: false }].map(b => (
+            <button key={b.label} onClick={() => doReading(b.val)} style={{
+              background: "rgba(196,163,90,0.1)", border: "1px solid rgba(196,163,90,0.3)",
+              color: "#c4a35a", padding: "10px 32px", borderRadius: 3, cursor: "pointer",
+              fontFamily: "'EB Garamond', serif", fontSize: 16,
+              transition: "all 0.2s ease",
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(196,163,90,0.2)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(196,163,90,0.1)"}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "shuffling") {
+    return (
+      <div style={{ textAlign: "center", padding: "120px 24px" }}>
+        <div style={{
+          fontFamily: "'Playfair Display', serif", fontSize: 22, color: "#c4a35a",
+          animation: "pulse 1.5s ease-in-out infinite",
+        }}>
+          {t.shuffling}
+        </div>
+      </div>
+    );
+  }
+
+  const positions = [t.past, t.present, t.future];
+
+  return (
+    <div style={{ padding: "40px 24px", maxWidth: 800, margin: "0 auto" }}>
+      <div style={{ textAlign: "center", marginBottom: 32 }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, color: "#e8e4dc" }}>
+          {t.basicReading}
+        </div>
+      </div>
+      {overlayCards.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{
+            fontFamily: "sans-serif", fontSize: 10, color: "#c4a35a", textTransform: "uppercase",
+            letterSpacing: 2, textAlign: "center", marginBottom: 12,
+          }}>
+            {t.higherInfluences}
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 40 }}>
+            {overlayCards.map((card, i) => (
+              <div key={card.id} style={{ textAlign: "center" }}>
+                <CardPlaceholder card={card} isReversed={card.isReversed} size="small" onClick={() => onViewCard(card)} />
+                <div style={{ fontSize: 10, color: "#9a9590", marginTop: 6, fontFamily: "sans-serif" }}>
+                  {card.isReversed ? "↕ " : ""}{card.name}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <div style={{
+        display: "flex", justifyContent: "center", gap: 40, marginBottom: 48,
+        borderTop: overlayCards.length ? "1px solid rgba(196,163,90,0.1)" : "none",
+        paddingTop: overlayCards.length ? 20 : 0,
+      }}>
+        {mainCards.map((card, i) => (
+          <div key={card.id} style={{ textAlign: "center" }}>
+            <div style={{
+              fontFamily: "sans-serif", fontSize: 10, color: "#c4a35a", textTransform: "uppercase",
+              letterSpacing: 2, marginBottom: 10,
+            }}>
+              {positions[i]}
+            </div>
+            <CardPlaceholder card={card} isReversed={card.isReversed} onClick={() => onViewCard(card)} />
+            <div style={{ fontSize: 12, color: "#e8e4dc", marginTop: 8, fontFamily: "'EB Garamond', serif" }}>
+              {card.name}
+            </div>
+            <div style={{ fontSize: 10, color: card.isReversed ? "#a06050" : "#7a9a6a", fontFamily: "sans-serif" }}>
+              {card.isReversed ? t.reversed : t.upright}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{
+        background: "rgba(196,163,90,0.04)", border: "1px solid rgba(196,163,90,0.1)",
+        borderRadius: 4, padding: 28,
+      }}>
+        <div style={{
+          fontFamily: "sans-serif", fontSize: 11, color: "#c4a35a", textTransform: "uppercase",
+          letterSpacing: 2, marginBottom: 16,
+        }}>
+          {t.interpretation}
+        </div>
+        <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 16, color: "#d4d0c8", lineHeight: 1.7 }}>
+          {interpText.split("\n\n").map((p, i) => {
+            const parts = p.split("**");
+            return (
+              <p key={i} style={{ marginBottom: 12 }}>
+                {parts.map((part, j) => j % 2 === 1 ? <strong key={j} style={{ color: "#c4a35a" }}>{part}</strong> : part)}
+              </p>
+            );
+          })}
+        </div>
+      </div>
+      <div style={{ textAlign: "center", marginTop: 32 }}>
+        <button onClick={reset} style={{
+          background: "rgba(196,163,90,0.1)", border: "1px solid rgba(196,163,90,0.3)",
+          color: "#c4a35a", padding: "10px 28px", borderRadius: 3, cursor: "pointer",
+          fontFamily: "'EB Garamond', serif", fontSize: 15,
+        }}>
+          {t.newReading}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// ADVANCED READING VIEW (Hexagram)
+// ─────────────────────────────────────────────────────────
+function AdvancedReading({ t, onViewCard }) {
+  const [step, setStep] = useState("ask");
+  const [isMundane, setIsMundane] = useState(null);
+  const [sigCard, setSigCard] = useState(null);
+  const [hexCards, setHexCards] = useState([]);
+  const [interpText, setInterpText] = useState("");
+
+  const doReading = useCallback((mundane) => {
+    setIsMundane(mundane);
+    setStep("shuffling");
+    setTimeout(() => {
+      const pool = mundane ? CARDS.filter(c => c.type === "minor") : CARDS;
+      const drawn = drawCards(pool, 7);
+      const sig = drawn[0];
+      const hex = drawn.slice(1);
+      setSigCard(sig);
+      setHexCards(hex);
+      const posLabels = [t.top, t.topRight, t.bottomRight, t.bottom, t.bottomLeft, t.topLeft];
+      const allForInterp = [
+        { card: sig, position: t.significator, isReversed: sig.isReversed },
+        ...hex.map((c, i) => ({ card: c, position: posLabels[i], isReversed: c.isReversed })),
+      ];
+      setInterpText(generateInterpretation(allForInterp));
+      setStep("reveal");
+    }, 2200);
+  }, [t]);
+
+  const reset = () => {
+    setStep("ask"); setSigCard(null); setHexCards([]); setInterpText(""); setIsMundane(null);
+  };
+
+  if (step === "ask") {
+    return (
+      <div style={{ textAlign: "center", padding: "80px 24px" }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, color: "#e8e4dc", marginBottom: 12 }}>
+          {t.advancedReading}
+        </div>
+        <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 16, color: "#9a9590", marginBottom: 40 }}>
+          {t.advancedDesc}
+        </div>
+        <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 18, color: "#d4d0c8", marginBottom: 24 }}>
+          {t.mundaneQ}
+        </div>
+        <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
+          {[{ label: t.yes, val: true }, { label: t.no, val: false }].map(b => (
+            <button key={b.label} onClick={() => doReading(b.val)} style={{
+              background: "rgba(196,163,90,0.1)", border: "1px solid rgba(196,163,90,0.3)",
+              color: "#c4a35a", padding: "10px 32px", borderRadius: 3, cursor: "pointer",
+              fontFamily: "'EB Garamond', serif", fontSize: 16,
+            }}>
+              {b.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "shuffling") {
+    return (
+      <div style={{ textAlign: "center", padding: "120px 24px" }}>
+        <div style={{
+          fontFamily: "'Playfair Display', serif", fontSize: 22, color: "#c4a35a",
+          animation: "pulse 1.5s ease-in-out infinite",
+        }}>
+          {t.shuffling}
+        </div>
+      </div>
+    );
+  }
+
+  const posLabels = [t.top, t.topRight, t.bottomRight, t.bottom, t.bottomLeft, t.topLeft];
+  // positions: 0=top, 1=top-right, 2=bottom-right, 3=bottom, 4=bottom-left, 5=top-left
+  // Ascending triangle (favorable): 5(TL), 0(T), 1(TR)
+  // Descending triangle (opposing): 4(BL), 3(B), 2(BR)
+  const hexPositions = [
+    { x: 50, y: 2 },   // 0: top
+    { x: 85, y: 26 },  // 1: top-right
+    { x: 85, y: 72 },  // 2: bottom-right
+    { x: 50, y: 96 },  // 3: bottom
+    { x: 15, y: 72 },  // 4: bottom-left
+    { x: 15, y: 26 },  // 5: top-left
+  ];
+
+  return (
+    <div style={{ padding: "40px 24px", maxWidth: 800, margin: "0 auto" }}>
+      <div style={{ textAlign: "center", marginBottom: 24 }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, color: "#e8e4dc" }}>
+          {t.advancedReading}
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 16, justifyContent: "center", marginBottom: 16, fontSize: 11, fontFamily: "sans-serif" }}>
+        <span style={{ color: "#7a9a6a" }}>▲ {t.favorable}: {t.topLeft}, {t.top}, {t.topRight}</span>
+        <span style={{ color: "#a06050" }}>▼ {t.opposing}: {t.bottomLeft}, {t.bottom}, {t.bottomRight}</span>
+      </div>
+      <div style={{ position: "relative", width: "100%", maxWidth: 520, margin: "0 auto 40px", aspectRatio: "1 / 1" }}>
+        {/* Center - Significator */}
+        <div style={{
+          position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)",
+          textAlign: "center", zIndex: 2,
+        }}>
+          <div style={{ fontSize: 10, color: "#c4a35a", textTransform: "uppercase", letterSpacing: 2, marginBottom: 6, fontFamily: "sans-serif" }}>
+            {t.significator}
+          </div>
+          {sigCard && <CardPlaceholder card={sigCard} isReversed={sigCard.isReversed} size="small" onClick={() => onViewCard(sigCard)} />}
+          {sigCard && <div style={{ fontSize: 10, color: "#9a9590", marginTop: 4 }}>{sigCard.name}</div>}
+        </div>
+        {/* Hex positions */}
+        {hexCards.map((card, i) => {
+          const pos = hexPositions[i];
+          const isFav = [0, 1, 5].includes(i);
+          return (
+            <div key={card.id} style={{
+              position: "absolute", left: `${pos.x}%`, top: `${pos.y}%`,
+              transform: "translate(-50%, -50%)", textAlign: "center",
+            }}>
+              <div style={{
+                fontSize: 9, color: isFav ? "#7a9a6a" : "#a06050",
+                textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4, fontFamily: "sans-serif",
+              }}>
+                {posLabels[i]}
+              </div>
+              <CardPlaceholder card={card} isReversed={card.isReversed} size="small" onClick={() => onViewCard(card)} />
+              <div style={{ fontSize: 9, color: "#9a9590", marginTop: 3, maxWidth: 90 }}>{card.name}</div>
+              <div style={{ fontSize: 8, color: card.isReversed ? "#a06050" : "#7a9a6a" }}>
+                {card.isReversed ? "Reversed" : "Upright"}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{
+        background: "rgba(196,163,90,0.04)", border: "1px solid rgba(196,163,90,0.1)",
+        borderRadius: 4, padding: 28,
+      }}>
+        <div style={{
+          fontFamily: "sans-serif", fontSize: 11, color: "#c4a35a", textTransform: "uppercase",
+          letterSpacing: 2, marginBottom: 16,
+        }}>
+          {t.interpretation}
+        </div>
+        <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 16, color: "#d4d0c8", lineHeight: 1.7 }}>
+          {interpText.split("\n\n").map((p, i) => {
+            const parts = p.split("**");
+            return (
+              <p key={i} style={{ marginBottom: 12 }}>
+                {parts.map((part, j) => j % 2 === 1 ? <strong key={j} style={{ color: "#c4a35a" }}>{part}</strong> : part)}
+              </p>
+            );
+          })}
+        </div>
+      </div>
+      <div style={{ textAlign: "center", marginTop: 32 }}>
+        <button onClick={reset} style={{
+          background: "rgba(196,163,90,0.1)", border: "1px solid rgba(196,163,90,0.3)",
+          color: "#c4a35a", padding: "10px 28px", borderRadius: 3, cursor: "pointer",
+          fontFamily: "'EB Garamond', serif", fontSize: 15,
+        }}>
+          {t.newReading}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// READING VIEW (Mode Selector)
+// ─────────────────────────────────────────────────────────
+function ReadingView({ t, onViewCard }) {
+  const [mode, setMode] = useState(null);
+
+  if (!mode) {
+    return (
+      <div style={{ textAlign: "center", padding: "80px 24px" }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, color: "#e8e4dc", marginBottom: 8 }}>
+          {t.reading}
+        </div>
+        <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 16, color: "#9a9590", marginBottom: 48 }}>
+          {t.askQuestion}
+        </div>
+        <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
+          {[
+            { key: "basic", label: t.basicReading, desc: t.basicDesc },
+            { key: "advanced", label: t.advancedReading, desc: t.advancedDesc },
+          ].map(m => (
+            <button key={m.key} onClick={() => setMode(m.key)} style={{
+              background: "rgba(196,163,90,0.05)", border: "1px solid rgba(196,163,90,0.2)",
+              borderRadius: 4, padding: "28px 36px", cursor: "pointer", textAlign: "center",
+              maxWidth: 280, transition: "all 0.2s ease",
+            }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "rgba(196,163,90,0.1)";
+                e.currentTarget.style.borderColor = "rgba(196,163,90,0.4)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "rgba(196,163,90,0.05)";
+                e.currentTarget.style.borderColor = "rgba(196,163,90,0.2)";
+              }}
+            >
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: "#c4a35a", marginBottom: 8 }}>
+                {m.label}
+              </div>
+              <div style={{ fontFamily: "'EB Garamond', serif", fontSize: 14, color: "#9a9590" }}>
+                {m.desc}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return mode === "basic"
+    ? <BasicReading t={t} onViewCard={onViewCard} />
+    : <AdvancedReading t={t} onViewCard={onViewCard} />;
+}
+
+// ─────────────────────────────────────────────────────────
+// MAIN APP
+// ─────────────────────────────────────────────────────────
+function App() {
+  const [lang, setLang] = useState("en");
+  const [view, setView] = useState("codex");
+  const [selectedCard, setSelectedCard] = useState(null);
+  const t = T[lang];
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Playfair+Display:wght@400;700&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #12100e; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(196,163,90,0.2); border-radius: 3px; }
+      `}</style>
+      <div style={{
+        minHeight: "100vh", background: "#12100e", color: "#e8e4dc",
+        fontFamily: "'EB Garamond', serif",
+      }}>
+        {/* Header */}
+        <header style={{
+          borderBottom: "1px solid rgba(196,163,90,0.12)", padding: "16px 24px",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          position: "sticky", top: 0, background: "rgba(18,16,14,0.95)",
+          backdropFilter: "blur(8px)", zIndex: 100,
+        }}>
+          <div>
+            <h1 style={{
+              fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 400,
+              color: "#c4a35a", letterSpacing: 1,
+            }}>
+              {t.title}
+            </h1>
+            <div style={{ fontFamily: "sans-serif", fontSize: 9, color: "#6a6560", textTransform: "uppercase", letterSpacing: 3, marginTop: 2 }}>
+              {t.subtitle}
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <nav style={{ display: "flex", gap: 4 }}>
+              {[{ key: "codex", label: t.codex }, { key: "reading", label: t.reading }].map(v => (
+                <button key={v.key} onClick={() => setView(v.key)} style={{
+                  background: view === v.key ? "rgba(196,163,90,0.12)" : "transparent",
+                  border: "none", color: view === v.key ? "#c4a35a" : "#9a9590",
+                  padding: "6px 16px", borderRadius: 3, cursor: "pointer",
+                  fontFamily: "'EB Garamond', serif", fontSize: 15,
+                  transition: "all 0.2s ease",
+                }}>
+                  {v.label}
+                </button>
+              ))}
+            </nav>
+            <button onClick={() => setLang(l => l === "en" ? "ru" : "en")} style={{
+              background: "none", border: "1px solid rgba(196,163,90,0.2)",
+              color: "#9a9590", padding: "4px 10px", borderRadius: 3, cursor: "pointer",
+              fontFamily: "sans-serif", fontSize: 10, textTransform: "uppercase", letterSpacing: 1,
+            }}>
+              {lang === "en" ? "RU" : "EN"}
+            </button>
+          </div>
+        </header>
+
+        {/* Content */}
+        {view === "codex"
+          ? <CodexView t={t} onSelectCard={setSelectedCard} />
+          : <ReadingView t={t} onViewCard={setSelectedCard} />
+        }
+
+        {/* Card Detail Drawer */}
+        <CardDetail card={selectedCard} onClose={() => setSelectedCard(null)} t={t} />
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+  </script>
+</body>
+</html>
